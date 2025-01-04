@@ -1,56 +1,100 @@
-from flask import Blueprint, jsonify, request
-from . import db
-from .models import User
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask import Blueprint, request, render_template, redirect, url_for, flash, session
+from app.models import User
+from app import db
+from werkzeug.security import check_password_hash
 
-main = Blueprint('main', __name__)
+# Buat blueprint untuk route utama
+main_blueprint = Blueprint('main', __name__)
 
-@main.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    
-    if not username or not email or not password:
-        return jsonify({'error':"Data gabisa kosong"}), 404
-    
-    if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-        return jsonify({'error':"Data Duplikat"}), 404
-    
-    new_user = User(username=username, email=email)
-    new_user.set_password(password)
-    db.session.add(new_user)
-    db.session.commit()
-    
-    return jsonify({'message':"Data Created"}), 201
-    
-   # Endpoint untuk login dan menghasilkan JWT
-@main.route('/login', methods=['POST'])
+@main_blueprint.route('/')
+def home():
+    return render_template('index.html')
+
+@main_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
-    data = request.get_json()
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
 
-    email = data.get('email')
-    password = data.get('password')
+            flash('Login berhasil!', 'success')
+            return redirect(url_for('main.dashboard'))
+        
+        flash('Email atau password salah', 'danger')
+        return redirect(url_for('main.login'))
 
-    if not email or not password:
-        return jsonify({"message": "Email and password are required"}), 400
+    return render_template('login.html')
 
-    user = User.query.filter_by(email=email).first()
 
-    if not user or not user.check_password(password):
-        return jsonify({"message": "Invalid credentials"}), 401
+@main_blueprint.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        role = request.form['role']
+        
+        new_user = User(username=username, email=email, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return redirect(url_for('main.login'))
+    
+    return render_template('register.html')
 
-    # Buat JWT token
-    access_token = create_access_token(identity=user.id)
-    return jsonify({"access_token": access_token}), 200
+@main_blueprint.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        flash('Anda harus login terlebih dahulu.', 'danger')
+        return redirect(url_for('main.login'))
+    
+    users = User.query.all()
+    
+    current_user_role = session.get('role', None)
+    
+    return render_template('dashboard.html', users=users, current_user_role=current_user_role)
 
-# Endpoint yang membutuhkan autentikasi
-@main.route('/protected', methods=['GET'])
-@jwt_required()
-def protected():
-    # Mendapatkan user yang sedang login dari JWT token
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
-    return jsonify({"message": f"Hello, {user.username}!"}), 200
+
+@main_blueprint.route('/edit_user/<int:user_id>', methods=['GET', 'POST'])
+def edit_user(user_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash('Anda tidak memiliki izin untuk mengakses halaman ini.', 'danger')
+        return redirect(url_for('main.dashboard'))  # Redirect jika bukan admin
+    
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.email = request.form['email']
+        user.role = request.form['role']
+        
+        db.session.commit()
+        flash('User berhasil diupdate!', 'success')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('edit_user.html', user=user)
+
+@main_blueprint.route('/delete_user/<int:user_id>', methods=['POST'])
+def delete_user(user_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash('Anda tidak memiliki izin untuk mengakses halaman ini.', 'danger')
+        return redirect(url_for('main.dashboard'))  # Redirect jika bukan admin
+    
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
+    flash('User berhasil dihapus!', 'success')
+    return redirect(url_for('main.dashboard'))
+
+@main_blueprint.route('/logout')
+def logout():
+    session.clear()
+    flash('Anda telah logout.', 'success')
+    return redirect(url_for('main.home'))

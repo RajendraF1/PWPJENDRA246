@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Form Login -->
+    <div class="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+        <!-- Judul Form -->
+        <h2 class="text-2xl font-bold text-center text-indigo-600">Login</h2>
+        <p class="text-center text-gray-600 mb-6">Masuk untuk melanjutkan</p>
+
+        <!-- Form Login -->
+        <form method="POST">
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="bg-{{ 'green' if category == 'success' else 'red' }}-100 text-{{ 'green' if category == 'success' else 'red' }}-800 p-4 rounded-lg">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Input Email -->
+            <div class="mb-4">
+                <label for="email" class="block text-gray-700 font-medium">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="Masukkan email Anda" 
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required>
+            </div>
+
+            <!-- Input Password -->
+            <div class="mb-4">
+                <label for="password" class="block text-gray-700 font-medium">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Masukkan password Anda" 
+                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required>
+            </div>
+
+            <!-- Tombol Login -->
+            <button 
+                type="submit" 
+                class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
+                Login
+            </button>
+        </form>
+
+        <!-- Tombol Registrasi -->
+        <p class="text-center text-gray-600 mt-4">
+            Belum punya akun? 
+            <a href="{{ url_for('main.register') }}" class="text-indigo-600 font-medium hover:underline">Daftar Sekarang</a>
+        </p>
+    </div>
+
+</body>
+</html>

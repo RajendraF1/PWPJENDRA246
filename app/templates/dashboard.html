@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar (Opsional) -->
+    <nav class="bg-indigo-600 p-4 text-white">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#" class="text-lg font-bold">Dashboard</a>
+            <a href="/logout" class="text-white hover:underline">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-indigo-600 mb-6">Daftar Pengguna</h1>
+
+        <!-- Tabel Daftar Pengguna -->
+        <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow-md">
+            <thead>
+                <tr class="bg-indigo-100">
+                    <th class="py-3 px-6 text-left text-indigo-600">ID</th>
+                    <th class="py-3 px-6 text-left text-indigo-600">Username</th>
+                    <th class="py-3 px-6 text-left text-indigo-600">Role</th>
+                    <th class="py-3 px-6 text-left text-indigo-600">Email</th>
+                    <th class="py-3 px-6 text-left text-indigo-600">Password Hash</th>
+                    {% if current_user_role == 'admin' %}
+                        <th class="py-3 px-6 text-left text-indigo-600">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="border-t">
+                    <td class="py-3 px-6">{{ user.id }}</td>
+                    <td class="py-3 px-6">{{ user.username }}</td>
+                    <td class="py-3 px-6">{{ user.role }}</td>
+                    <td class="py-3 px-6">{{ user.email }}</td>
+                    <td class="py-3 px-6">
+                        <span id="password-preview-{{ user.id }}" class="block truncate" style="max-width: 200px;">
+                            {{ user.password_hash[:50] }}...
+                        </span>
+                    </td>
+                    {% if current_user_role == 'admin' %}
+                        <td class="py-3 px-6">
+                            <a href="{{ url_for('main.edit_user', user_id=user.id) }}" class="text-indigo-600 hover:underline">Edit</a> |
+                            <a href="{{ url_for('main.delete_user', user_id=user.id) }}" class="text-red-600 hover:underline">Delete</a>
+                        </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="py-3 px-6 text-center text-gray-500">Tidak ada data pengguna</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
